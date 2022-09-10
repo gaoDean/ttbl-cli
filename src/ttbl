@@ -1,0 +1,68 @@
+#!/bin/sh
+
+if [ "$1" == "-sync" ]; then # sync
+	host="https://caulfieldsync.vercel.app/api/timetable"
+	data="$HOME/.local/share/ttbl"
+	cache="$HOME/.cache/ttbl"
+	cachefile="$cache/subjects.json"
+	nextDays="$1"
+	prevDays="$2"
+
+	mkdir -p "$cache"
+	mkdir -p "$data"
+
+	token=$(cat "$data/token")
+
+	if [ -z "$1" ]; then nextDays="1"; fi
+	if [ -z "$2" ]; then prevDays="0"; fi
+
+	curl --progress-bar "$host/$token?dayMinus=$2&dayPlus=$1&shorten=true" -o "$cachefile"
+	exit 0
+elif [ "$1" == "-token" ]; then # get token
+	host="https://caulfieldsync.vercel.app/api/token"
+	data="$HOME/.local/share/ttbl"
+
+	mkdir -p "$data"
+
+	curl --progress-bar -L "$host?username=${2}&password=${3}" -o "$data/token"
+	if [ $(cat "$data/token" | jq -r '.token') == "null" ]; then
+		cat "$data/token" | jq -r '.error'
+	else
+		echo "Token fetched into $HOME/.local/share/ttbl/token"
+	fi
+	exit 0
+fi
+
+# the rest is processing the data
+datefmt="%Y%m%d"
+if [ -z $1 ]; then
+	fetch=$(date "+%Y%m%d");
+else
+	date=$(echo $1 | grep -e "[-+][0-9]\+")
+	if [ -z $date ]; then
+		date=$1
+		fetch=$(date -v "+1w" -v "${date}w" "+${datefmt}");
+echo $(date -j -f "$datefmt" $fetch "+%A")
+	else
+		fetch=$(date -v "${date}d" "+${datefmt}");
+	fi
+fi
+echo $(date -j -f "$datefmt" $fetch "+%A")
+echo $fetch
+
+subjects="$HOME/.cache/ttbl/subjects.json"
+output=$(jq '.data.classes[]' < "$subjects" |
+	jq -r '"\(.id); \(.periodName)| \(.room)\t| \(.detailedName)"')
+# date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
+output=$(printf "%s" "$output" |
+	sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
+			/^[0-9]{2}/d ;
+			s/^([0-9]\|.*?\|) 9(.*)/\1\2/ ;
+			s/W[0-9]{2}// ;
+			s/^([0-9]\|.*?\|)(.*)/\1\L\2/
+			s/-.*//")
+
+if [ $(echo $output | grep -e "^\s*$" | wc -l) -gt "0" ]; then
+	output="do something productive.";
+fi
+printf "%s\n" "$output"
