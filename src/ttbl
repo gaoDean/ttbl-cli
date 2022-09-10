@@ -28,9 +28,8 @@ if [ "$1" == "-sync" ]; then # sync
 		if [ ! -f "$timetable" ]; then echo "[\n]" > $timetable; echo "test"; fi
 
 		tmp=$(echo "$tmp" | jq '.data.classes')
-		aen=$(cat "$timetable")
 		tmp=$(jq --argjson arr1 "$tmp" --argjson arr2 "$(cat "$timetable")" -n \
-			'$arr1 + $arr2 | group_by(.startTime) | map(.[-1])')
+			'$arr2 + $arr1 | unique_by(.startTime)')
 
 		echo "$tmp" > "$timetable"
 		echo "Timetable synced"
