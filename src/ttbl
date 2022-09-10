@@ -5,9 +5,7 @@ data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
 timetable="${cache}/timetable.json"
 
-col_grey="\x1b[38;5;7m"
-
-col_black="\x1b[38;5;8m"
+col_black="\x1b[38;5;0m"
 col_red="\x1b[38;5;9m"
 col_green="\x1b[38;5;10m"
 col_yellow="\x1b[38;5;11m"
@@ -86,9 +84,9 @@ output=$(jq '.[]' < "$timetable" |
 output=$(printf "%s" "$output" |
 	sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
 			/^[0-9]{2}/d ;
-			s/^([0-9]\|.*?\|) 9(.*)/${col_blue}\1\2/ ;
+			s/^([0-9]\|.*?\|) 9(.*)/\1\2/ ;
 			s/W[0-9]{2}// ;
-			s/^([0-9]\|.*?\|)(.*)/\1\L\2/
+			s/^([0-9])\|(.*?)\|(.*)/${col_blue}\1 ${col_yellow}\2${col_normal}\L\3/
 			s/-.*//")
 
 if [ $(echo $output | wc -w) -eq "0" ]; then
