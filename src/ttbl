@@ -15,13 +15,15 @@ col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
 
+if [ -z "$TTBL_CYAN" ]; then TTBL_CYAN=""; fi
+
 mkdir -p "$cache"
 mkdir -p "$data"
 
-if [ "$1" == "-sync" ]; then # sync
+if [ "$1" = "-sync" ]; then # sync
 	nextDays="$2"
 	prevDays="$3"
-	token=$(cat "${data}/token" | jq -r '.token')
+	token=$(jq -r '.token' < "${data}/token")
 
 	if [ -z "$2" ]; then nextDays="1"; fi
 	if [ -z "$3" ]; then prevDays="0"; fi
@@ -35,7 +37,7 @@ if [ "$1" == "-sync" ]; then # sync
 		echo "Failed. Check that you have a valid token."
 		echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
 	else
-		if [ ! -f "$timetable" ]; then echo "[\n]" > $timetable; fi
+		if [ ! -f "$timetable" ]; then printf "[\n]" > "$timetable"; fi
 
 		tmp=$(echo "$tmp" | jq '.data.classes')
 		tmp=$(jq --argjson arr1 "$tmp" --argjson arr2 "$(cat "$timetable")" -n \
@@ -45,18 +47,18 @@ if [ "$1" == "-sync" ]; then # sync
 		echo "Timetable synced"
 	fi
 	exit 0
-elif [ "$1" == "-token" ]; then # get token
+elif [ "$1" = "-token" ]; then # get token
 	# get the token
 	tmp=$(curl --progress-bar -L "${host}/token?username=${2}&password=${3}")
 
 	# check if token is valid
-	if [ $(echo "$tmp" | grep -e "^Error" | wc -l) -gt "0" ]; then
+	if [ "$(echo "$tmp" | grep -e "^Error" | wc -w)" -gt "0" ]; then
 		echo "Something went wrong, try again."
 		echo "If you're 100% sure that it was correct, sometimes you just need to try again."
-	elif [ "$(echo "$tmp" | jq -r '.token')" == "null" ]; then
+	elif [ "$(echo "$tmp" | jq -r '.token')" = "null" ]; then
 		echo "$tmp" | jq -r '.error'
 	else
-		echo $tmp > "${data}/token"
+		echo "$tmp" > "${data}/token"
 		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
 	fi
 	exit 0
@@ -64,32 +66,29 @@ fi
 
 # the rest is processing the data
 datefmt="%Y%m%d"
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
 	fetch=$(date "+%Y%m%d")
 else
-	date=$(echo $1 | grep -e "[-+][0-9]\+")
-	if [ -z $date ]; then
+	date=$(echo "$1" | grep -e "[-+][0-9]\+")
+	if [ -z "$date" ]; then
 		date=$1
-		fetch=$(date -v "+1w" -v "${date}w" "+${datefmt}")
+		fetch=$(date -v "+2d" -v "${date}w" "+${datefmt}")
 	else
 		fetch=$(date -v "${date}d" "+${datefmt}")
 	fi
 fi
-date=$(date -j -f "$datefmt" $fetch "+%A")
+date=$(date -j -f "$datefmt" "$fetch" "+%A")
 
 output=$(jq '.[]' < "$timetable" |
-	jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description)"')
+	jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.colour);"')
 
 # date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
-output=$(printf "%s" "$output" |
-	sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
-			/^[0-9]{2}/d ;
-			s/^([0-9]);(.*?);(.*)/${col_blue}\1 ${col_yellow}\2${col_normal}\L\3/")
+output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ; /^[0-9]{2}/d")
 
-if [ $(echo $output | wc -w) -eq "0" ]; then
+if [ "$(echo "$output" | wc -w)" -eq "0" ]; then
 	output="The week's ended, go do something productive."
 	printf "It's %s. %s\n" "$date" "$output"
 else
-	echo $(printf "It's ${col_cyan}%s${col_normal}.\n" $(date -j -f "$datefmt" $fetch "+%A"))
+	printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+%A")"
 	printf "%s\n" "$output"
 fi
