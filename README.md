@@ -3,5 +3,9 @@
 
 The main purpose of this utility was to get past the frequent breakages of the CaulfieldLife website.
 
-## Intro
+## Introduction
 The main function of `ttbl` (timetable) is to get the day's subjects instantly from your local cache. The two secondary functions are to fetch your api token from [here](https://caulfieldsync-docs.vercel.app/developers/token), and to sync the database of subjects onto your local cache (this can be configured to run asynchronously).
+
+## Usage
+To get the days subjects, run:
+	> ttbl

@@ -1,40 +1,46 @@
 #!/bin/sh
 
+host="https://caulfieldsync.vercel.app/api"
+data="$HOME/.local/share/ttbl"
+cache="$HOME/.cache/ttbl"
+
+mkdir -p "$cache"
+mkdir -p "$data"
+
 if [ "$1" == "-sync" ]; then # sync
-	host="https://caulfieldsync.vercel.app/api/timetable"
-	data="$HOME/.local/share/ttbl"
-	cache="$HOME/.cache/ttbl"
-	cachefile="$cache/subjects.json"
-	nextDays="$1"
-	prevDays="$2"
+	nextDays="$2"
+	prevDays="$3"
+	token=$(cat "${data}/token" | jq -r '.token')
 
-	mkdir -p "$cache"
-	mkdir -p "$data"
+	if [ -z "$2" ]; then nextDays="1"; fi
+	if [ -z "$3" ]; then prevDays="0"; fi
 
-	token=$(cat "$data/token")
+	# get the timetable
+	tmp=$(curl --progress-bar "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
 
-	if [ -z "$1" ]; then nextDays="1"; fi
-	if [ -z "$2" ]; then prevDays="0"; fi
-
-	curl --progress-bar "$host/$token?dayMinus=$2&dayPlus=$1&shorten=true" -o "$cachefile"
+	# check if timetable is valid
+	if [ "$(echo "$tmp" | jq -r '.error')" != "null" ]; then
+		echo "$tmp" | jq -r '.error'
+		echo "Failed. Check that you have a valid token."
+		echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
+	else
+		echo "$tmp" > "${cache}/timetable.json"
+		echo "Timetable synced"
+	fi
 	exit 0
 elif [ "$1" == "-token" ]; then # get token
-	host="https://caulfieldsync.vercel.app/api/token"
-	data="$HOME/.local/share/ttbl"
+	# get the token
+	tmp=$(curl --progress-bar -L "${host}/token?username=${2}&password=${3}")
 
-	mkdir -p "$data"
-
-	tmp=$(curl --progress-bar -L "$host?username=${2}&password=${3}")
-
-	# checks
+	# check if token is valid
 	if [ $(echo "$tmp" | grep -e "^Error" | wc -l) -gt "0" ]; then
 		echo "Something went wrong, try again."
+		echo "If you're 100% sure that it was correct, sometimes you just need to try again."
 	elif [ "$(echo "$tmp" | jq -r '.token')" == "null" ]; then
 		echo "$tmp" | jq -r '.error'
-		echo "If you're 100% sure that it was correct, sometimes you just need to try again."
 	else
-		echo tmp > "${data}/token"
-		echo "Token fetched into $HOME/.local/share/ttbl/token"
+		echo $tmp > "${data}/token"
+		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
 	fi
 	exit 0
 fi
@@ -54,8 +60,8 @@ else
 fi
 echo $(date -j -f "$datefmt" $fetch "+%A")
 
-subjects="$HOME/.cache/ttbl/subjects.json"
-output=$(jq '.data.classes[]' < "$subjects" |
+timetable="$cache/timetable.json"
+output=$(jq '.data.classes[]' < "$timetable" |
 	jq -r '"\(.id); \(.periodName)| \(.room)\t| \(.detailedName)"')
 
 # date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
@@ -67,7 +73,7 @@ output=$(printf "%s" "$output" |
 			s/^([0-9]\|.*?\|)(.*)/\1\L\2/
 			s/-.*//")
 
-if [ $(echo $output | grep -e "^\s*$" | wc -l) -gt "0" ]; then
+if [ $(echo $output | wc -w) -gt "1" ]; then
 	output="do something productive."
 fi
 printf "%s\n" "$output"
