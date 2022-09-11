@@ -14,12 +14,12 @@ To get the days subjects, run:
 This will present you with a list like this (colorized):
 
 	It's Monday.
-	0  F3	 	●  House Tutor
-	1  FCEN	●  Maths Enrichment
-	2  PGY	●  Photography
-	3  D7	 	●  Design and Engineering
-	4  F3	 	●  Individuals & Societies
-	5  N/A	●  Physical Education Boys
+	0  F3	*  House Tutor
+	1  FCEN	*  Maths Enrichment
+	2  PGY	*  Photography
+	3  D7	*  Design and Engineering
+	4  F3	*  Individuals & Societies
+	5  N/A	*  Physical Education Boys
 
 ### Syncing
 
