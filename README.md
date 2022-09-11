@@ -50,3 +50,11 @@ Normally, the following would go into your `crontab -e`
 	ttbl 3 # next wednesday
 	ttbl +1 # tommorow
 	ttbl -2 # day before yesterday
+
+## Configuration
+
+	if [ -z "$(echo "$TTBL_PERIOD")" ]; then TTBL_PERIOD="$col_blue"; fi
+	if [ -z "$(echo "$TTBL_ROOM")" ]; then TTBL_ROOM="$col_magenta"; fi
+	if [ -z "$(echo "$TTBL_SUBJECT")" ]; then TTBL_SUBJECT="$col_normal"; fi
+	if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM="${col_black} "; fi
+	if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
