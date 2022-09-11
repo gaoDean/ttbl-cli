@@ -5,7 +5,7 @@ data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
 timetable="${cache}/timetable.json"
 
-col_black="\x1b[38;5;0m"
+col_black="\x1b[38;5;8m"
 col_red="\x1b[38;5;9m"
 col_green="\x1b[38;5;10m"
 col_yellow="\x1b[38;5;11m"
@@ -14,6 +14,12 @@ col_magenta="\x1b[38;5;13m"
 col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
+
+TTBL_PERIOD="$col_blue"
+TTBL_ROOM="$col_magenta"
+TTBL_SUBJECT="$col_normal"
+TTBL_ENDCHAR="●"
+TTBL_DELIM="${col_black} "
 
 hextoansi() {
 	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
@@ -102,7 +108,13 @@ printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+
 
 printf "%s" "$output" | \
 while read -r line; do
-	echo "$(echo "$line" | sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/${col_blue}\1${col_normal}${col_yellow}\2"$(hextoansi "$line")"\3${col_normal}/")"
+	echo "$(echo "$line" |
+		sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/\
+${TTBL_PERIOD}\1\
+${TTBL_DELIM}${col_normal}${TTBL_ROOM}\2\
+${TTBL_DELIM}${TTBL_SUBJECT}\3\
+$(hextoansi "$line") ${TTBL_ENDCHAR}/")"
+
 done
 
 exit 0
