@@ -20,6 +20,7 @@ if [ -z "$(echo "$TTBL_ROOM")" ]; then TTBL_ROOM="$col_magenta"; fi
 if [ -z "$(echo "$TTBL_SUBJECT")" ]; then TTBL_SUBJECT="$col_normal"; fi
 if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM="${col_black} "; fi
 if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
+if [ -z "$(echo "$TTBL_DAYEND")" ]; then TTBL_DAYEND="17"; fi
 
 hextoansi() {
 	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
@@ -79,7 +80,11 @@ fi
 # the rest is processing the data
 datefmt="%Y%m%d"
 if [ -z "$1" ]; then
-	fetch=$(date "+%Y%m%d")
+	if [ "$(date "+%H")" -gt "$(echo $TTBL_DAYEND)" ]; then
+		fetch=$(date -v "+1d" "+%Y%m%d")
+	else
+		fetch=$(date "+%Y%m%d")
+	fi
 else
 	date=$(echo "$1" | grep -e "[-+][0-9]\+")
 	if [ -z "$date" ]; then
