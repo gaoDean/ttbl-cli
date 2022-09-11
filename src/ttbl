@@ -15,6 +15,13 @@ col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
 
+hextoansi() {
+	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
+	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#..(..).*/\1/")));"
+	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#....(..).*/\1/")))m"
+	echo "$ansi"
+}
+
 if [ -z "$TTBL_CYAN" ]; then TTBL_CYAN=""; fi
 
 mkdir -p "$cache"
@@ -88,7 +95,14 @@ output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ; /^[0-9
 if [ "$(echo "$output" | wc -w)" -eq "0" ]; then
 	output="The week's ended, go do something productive."
 	printf "It's %s. %s\n" "$date" "$output"
-else
-	printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+%A")"
-	printf "%s\n" "$output"
+	exit 0
 fi
+
+printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+%A")"
+
+printf "%s" "$output" | \
+while read -r line; do
+	echo "$(echo "$line" | sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/${col_blue}\1${col_normal}${col_yellow}\2"$(hextoansi "$line")"\3${col_normal}/")"
+done
+
+exit 0
