@@ -108,7 +108,8 @@ printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+
 printf "%s\n" "$output" | \
 while read -r line; do
 	echo "$(echo "$line" |
-		sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/\
+		sed -E "s/^(.*;) (\t;.*)/\1 N\/A\2/ ;
+			s/^([0-9]);(.*?);(.*); #.{6}.*/\
 ${TTBL_PERIOD}\1\
 ${TTBL_DELIM}${col_normal}${TTBL_ROOM}\2\
 $(hextoansi "$line") ${TTBL_COLOR}\
