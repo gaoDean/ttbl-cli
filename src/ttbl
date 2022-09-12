@@ -15,15 +15,15 @@ col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
 
-if [ -z "$(echo "$TTBL_PERIOD")" ]; then TTBL_PERIOD="$col_blue"; fi
-if [ -z "$(echo "$TTBL_ROOM")" ]; then TTBL_ROOM="$col_magenta"; fi
-if [ -z "$(echo "$TTBL_SUBJECT")" ]; then TTBL_SUBJECT="$col_normal"; fi
-if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM=" "; fi
-if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
-if [ -z "$(echo "$TTBL_DAYEND")" ]; then TTBL_DAYEND="17"; fi
+if [ -z "$TTBL_PERIOD" ]; then TTBL_PERIOD="$col_blue"; fi
+if [ -z "$TTBL_ROOM" ]; then TTBL_ROOM="$col_magenta"; fi
+if [ -z "$TTBL_SUBJECT" ]; then TTBL_SUBJECT="$col_normal"; fi
+if [ -z "$TTBL_DELIM" ]; then TTBL_DELIM=" "; fi
+if [ -z "$TTBL_COLOR" ]; then TTBL_COLOR="●"; fi
+if [ -z "$TTBL_DAYEND" ]; then TTBL_DAYEND="17"; fi
 
-if [ -z "$(echo "$TTBL_DAYIS_MSG")" ]; then TTBL_DAYIS_MSG="It's"; fi
-if [ -z "$(echo "$TTBL_DAYSET_MSG")" ]; then TTBL_DAYSET_MSG="Here's"; fi
+if [ -z "$TTBL_DAYIS_MSG" ]; then TTBL_DAYIS_MSG="It's"; fi
+if [ -z "$TTBL_DAYSET_MSG" ]; then TTBL_DAYSET_MSG="Here's"; fi
 
 hextoansi() {
 	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
@@ -83,7 +83,7 @@ fi
 # the rest is processing the data
 datefmt="%Y%m%d"
 if [ -z "$1" ]; then
-	if [ "$(date "+%H")" -gt "$(echo $TTBL_DAYEND)" ]; then
+	if [ "$(date "+%H")" -gt "$TTBL_DAYEND" ]; then
 		fetch=$(date -v "+1d" "+%Y%m%d")
 	else
 		fetch=$(date "+%Y%m%d")
@@ -117,14 +117,14 @@ fi
 
 printf "\n%s\n" "$output" | \
 while read -r line; do
-	echo "$(echo "$line" |
+	echo "$line" |
 		sed -E "s/^(.*;) (\t;.*)/\1 N\/A\2/ ;
 			s/^([0-9]);(.*?);(.*); #.{6}.*/\
 ${TTBL_PERIOD}\1\
 ${TTBL_DELIM}${col_normal}${TTBL_ROOM}\2\
 $(hextoansi "$line") ${TTBL_COLOR}\
 ${TTBL_DELIM}${TTBL_SUBJECT}\3\
-/")"
+/"
 done
 
 exit 0
