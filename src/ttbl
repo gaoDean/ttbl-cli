@@ -85,10 +85,11 @@ datefmt="%Y%m%d"
 if [ -z "$1" ]; then
 	if [ "$(date "+%H")" -gt "$TTBL_DAYEND" ]; then
 		fetch=$(date -v "+1d" "+%Y%m%d")
+		printf "%s" "$TTBL_DAYSET_MSG"
 	else
 		fetch=$(date "+%Y%m%d")
+		printf "%s" "$TTBL_DAYIS_MSG"
 	fi
-	printf "%s" "$TTBL_DAYIS_MSG"
 else
 	date=$(echo "$1" | grep -e "[-+][0-9]\+")
 	if [ -z "$date" ]; then
