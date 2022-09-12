@@ -22,6 +22,9 @@ if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM="${col_black} "; fi
 if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
 if [ -z "$(echo "$TTBL_DAYEND")" ]; then TTBL_DAYEND="17"; fi
 
+if [ -z "$(echo "$TTBL_DAYIS_MSG")" ]; then TTBL_DAYIS_MSG="It's"; fi
+if [ -z "$(echo "$TTBL_DAYSET_MSG")" ]; then TTBL_DAYSET_MSG="Here's"; fi
+
 hextoansi() {
 	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
 	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#..(..).*/\1/")));"
@@ -85,6 +88,7 @@ if [ -z "$1" ]; then
 	else
 		fetch=$(date "+%Y%m%d")
 	fi
+	printf "%s" "$TTBL_DAYIS_MSG"
 else
 	date=$(echo "$1" | grep -e "[-+][0-9]\+")
 	if [ -z "$date" ]; then
@@ -93,8 +97,10 @@ else
 	else
 		fetch=$(date -v "${date}d" "+${datefmt}")
 	fi
+	printf "%s" "$TTBL_DAYSET_MSG"
 fi
 date=$(date -j -f "$datefmt" "$fetch" "+%A")
+printf " ${col_cyan}%s${col_normal}. " "$date" # next if statement addresses no \n
 
 output=$(jq '.[]' < "$timetable" |
 	jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.colour);"')
@@ -104,13 +110,12 @@ output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ; /^[0-9
 
 if [ "$(echo "$output" | wc -w)" -eq "0" ]; then
 	output="The week's ended, go do something productive."
-	printf "It's %s. %s\n" "$date" "$output"
+	printf "%s\n" "$output"
 	exit 0
 fi
 
-printf "It's ${col_cyan}%s${col_normal}.\n" "$(date -j -f "$datefmt" "$fetch" "+%A")"
 
-printf "%s\n" "$output" | \
+printf "\n%s\n" "$output" | \
 while read -r line; do
 	echo "$(echo "$line" |
 		sed -E "s/^(.*;) (\t;.*)/\1 N\/A\2/ ;
