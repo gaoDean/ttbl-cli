@@ -18,7 +18,7 @@ col_normal="\x1b[0m"
 if [ -z "$(echo "$TTBL_PERIOD")" ]; then TTBL_PERIOD="$col_blue"; fi
 if [ -z "$(echo "$TTBL_ROOM")" ]; then TTBL_ROOM="$col_magenta"; fi
 if [ -z "$(echo "$TTBL_SUBJECT")" ]; then TTBL_SUBJECT="$col_normal"; fi
-if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM="${col_black} "; fi
+if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM=" "; fi
 if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
 if [ -z "$(echo "$TTBL_DAYEND")" ]; then TTBL_DAYEND="17"; fi
 
