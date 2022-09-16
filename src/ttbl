@@ -5,6 +5,17 @@ data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
 timetable="${cache}/timetable.json"
 
+touch "$HOME/.ttbl"
+
+
+help="\
+usage: ttbl [<options>] <date>
+
+  -h, --help                show this usage summary and exit
+  -token USER_ID PASSWORD   get the token for this user
+  -sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past
+  -mro                      machine-readable output (semicolon seperated)"
+
 col_black="\x1b[38;5;8m"
 col_red="\x1b[38;5;9m"
 col_green="\x1b[38;5;10m"
@@ -19,7 +30,7 @@ if [ -z "$TTBL_PERIOD" ]; then TTBL_PERIOD="$col_blue"; fi
 if [ -z "$TTBL_ROOM" ]; then TTBL_ROOM="$col_magenta"; fi
 if [ -z "$TTBL_SUBJECT" ]; then TTBL_SUBJECT="$col_normal"; fi
 if [ -z "$TTBL_DELIM" ]; then TTBL_DELIM=" "; fi
-if [ -z "$TTBL_COLOR" ]; then TTBL_COLOR="●"; fi
+if [ -z "$TTBL_COLOR" ]; then TTBL_COLOR="*"; fi
 if [ -z "$TTBL_DAYEND" ]; then TTBL_DAYEND="17"; fi
 
 if [ -z "$TTBL_DAYIS_MSG" ]; then TTBL_DAYIS_MSG="It's"; fi
@@ -36,7 +47,10 @@ hextoansi() {
 mkdir -p "$cache"
 mkdir -p "$data"
 
-if [ "$1" = "-sync" ]; then # sync
+if [ "$1" = "-h" ] || [ "$1" == "--help" ]; then
+	echo "$help"
+	exit 0
+elif [ "$1" = "-sync" ]; then # sync
 	nextDays="$2"
 	prevDays="$3"
 	token=$(jq -r '.token' < "${data}/token")
@@ -78,6 +92,16 @@ elif [ "$1" = "-token" ]; then # get token
 		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
 	fi
 	exit 0
+elif [ ! -z "$1" ] && [ "$(echo "$1" | grep -e "+\?[0-9]\+" | wc -w)" -eq "0" ]; then
+	echo "unrecognized option '$1'"
+	echo "$help"
+	exit 0
+fi
+
+# machine readable output
+if [ "$2" = "-mro" ]; then
+	TTBL_DAYSET_MSG=""
+	TTBL_DAYIS_MSG=""
 fi
 
 # the rest is processing the data
@@ -101,14 +125,22 @@ else
 	printf "%s" "$TTBL_DAYSET_MSG"
 fi
 date=$(date -j -f "$datefmt" "$fetch" "+%A")
-printf " ${col_cyan}%s${col_normal}. " "$date" # next if statement addresses no \n
 
 output=$(jq '.[]' < "$timetable" |
 	jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.colour);"')
 
 # date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
-output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ; /^[0-9]{2}/d")
+output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
+											s/^(.*;) (\t;.*)/\1 N\/A\2/ ;
+											/^[0-9]{2}/d")
 
+if [ "$2" = "-mro" ]; then
+	printf "%s\n" "$output" | sed -E "s/; #.*// ;
+										s/\s*;\s*/;/g"
+	exit 0
+fi
+
+printf " ${col_cyan}%s${col_normal}. " "$date" # next if statement addresses no \n
 if [ "$(echo "$output" | wc -w)" -eq "0" ]; then
 	output="The week's ended, go do something productive."
 	printf "%s\n" "$output"
@@ -119,12 +151,10 @@ fi
 printf "\n%s\n" "$output" | \
 while read -r line; do
 	echo "$line" |
-		sed -E "s/^(.*;) (\t;.*)/\1 N\/A\2/ ;
-			s/^([0-9]);(.*?);(.*); #.{6}.*/\
+		sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/\
 ${TTBL_PERIOD}\1\
 ${TTBL_DELIM}${col_normal}${TTBL_ROOM}\2\
-$(hextoansi "$line") ${TTBL_COLOR}\
-${TTBL_DELIM}${TTBL_SUBJECT}\3\
+$(hextoansi "$line") ${TTBL_COLOR}${TTBL_SUBJECT}\3\
 /"
 done
 
