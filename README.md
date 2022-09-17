@@ -25,19 +25,19 @@ This will present you with a list like this (colorized):
 
 To sync, first get your token with:
 
-	ttbl -token <id_num> <password>
+	ttbl --token <id_num> <password>
 
 for example,
 
-	ttbl -token "123456" "mypassword"
+	ttbl -t "123456" "mypassword"
 
 then, you can sync with
 
-	ttbl -sync <next_days> <prev_days>
+	ttbl --sync <next_days> <prev_days>
 
 for example, this syncs 14 days into the future.
 
-	ttbl -sync 14
+	ttbl -s 14
 
 Normally, the following would go into your `crontab -e`
 
