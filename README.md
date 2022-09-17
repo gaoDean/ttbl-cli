@@ -61,3 +61,6 @@ Normally, the following would go into your `crontab -e`
 	[ -z "$TTBL_DAYEND" ] && TTBL_DAYEND="17"
 	[ -z "$TTBL_CURRENTDAY_MSG" ] && TTBL_CURRENTDAY_MSG="It's"
 	[ -z "$TTBL_OTHERDAY_MSG" ] && TTBL_OTHERDAY_MSG="Here's"
+
+## Credit
+* ttbl-cli uses the CaulfieldLife endpoints from [here](https://github.com/garv-shah/caulfieldsync)
