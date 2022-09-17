@@ -1,4 +1,4 @@
-<h2 align="center">terminaltimetable</h2>
+<h2 align="center">ttbl-cli</h2>
 <p align="center"> A fast terminal interface to the CaulfieldLife timetable</p>
 
 The main purpose of this utility was to get past the frequent breakages of the CaulfieldLife website.
