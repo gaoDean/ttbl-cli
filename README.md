@@ -53,8 +53,11 @@ Normally, the following would go into your `crontab -e`
 
 ## Configuration
 
-	if [ -z "$(echo "$TTBL_PERIOD")" ]; then TTBL_PERIOD="$col_blue"; fi
-	if [ -z "$(echo "$TTBL_ROOM")" ]; then TTBL_ROOM="$col_magenta"; fi
-	if [ -z "$(echo "$TTBL_SUBJECT")" ]; then TTBL_SUBJECT="$col_normal"; fi
-	if [ -z "$(echo "$TTBL_DELIM")" ]; then TTBL_DELIM="${col_black} "; fi
-	if [ -z "$(echo "$TTBL_COLOR")" ]; then TTBL_COLOR="●"; fi
+	[ -z "$TTBL_PERIOD" ] && TTBL_PERIOD="$col_blue"
+	[ -z "$TTBL_ROOM" ] && TTBL_ROOM="$col_magenta"
+	[ -z "$TTBL_SUBJECT" ] && TTBL_SUBJECT="$col_normal"
+	[ -z "$TTBL_DELIM" ] && TTBL_DELIM=" "
+	[ -z "$TTBL_COLOR" ] && TTBL_COLOR="*"
+	[ -z "$TTBL_DAYEND" ] && TTBL_DAYEND="17"
+	[ -z "$TTBL_CURRENTDAY_MSG" ] && TTBL_CURRENTDAY_MSG="It's"
+	[ -z "$TTBL_OTHERDAY_MSG" ] && TTBL_OTHERDAY_MSG="Here's"

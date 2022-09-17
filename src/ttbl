@@ -75,7 +75,7 @@ function get_timetable() {
 	if [ "$(echo "$tmp" | jq -r '.error')" != "null" ]; then
 		echo "$tmp" | jq -r '.error'
 		echo "Failed. Check that you have a valid token."
-		echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
+		[ ! "$mro" ] && echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
 	else
 		[ ! -f "$timetable" ] && printf "[\n]" > "$timetable"
 
@@ -101,9 +101,10 @@ function get_token() {
 	# check if token is valid
 	if [ "$(echo "$tmp" | grep -e "^Error" | wc -w)" -gt "0" ]; then
 		echo "Something went wrong, try again."
-		echo "If you're 100% sure that it was correct, sometimes you just need to try again."
+		[ ! "$mro" ] && echo "If you're 100% sure that it was correct, sometimes you just need to try again."
 	elif [ "$(echo "$tmp" | jq -r '.token')" = "null" ]; then
-		echo "$tmp" | jq -r '.error'
+		echo "Something went wrong, try again."
+		[ ! "$mro" ] && echo "$tmp" | jq -r '.error'
 	else
 		echo "$tmp" > "${data}/token"
 		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
