@@ -6,6 +6,18 @@ data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
 timetable="${cache}/timetable.json"
 
+if [ ! -f "${data}/token" ]; then
+	echo "No token provided"
+fi
+
+help="\
+usage: ttbl [<options>] <date>
+
+  -h, --help                show this usage summary and exit
+  -token USER_ID PASSWORD   get the token for this user
+  -sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past
+  -mro                      machine-readable output (semicolon seperated)"
+
 col_black="\x1b[38;5;8m"
 col_red="\x1b[38;5;9m"
 col_green="\x1b[38;5;10m"
@@ -16,32 +28,31 @@ col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
 
-mkdir -p "$cache"
-mkdir -p "$data"
-
 if [ -z "$TTBL_PERIOD" ]; then TTBL_PERIOD="$col_blue"; fi
 if [ -z "$TTBL_ROOM" ]; then TTBL_ROOM="$col_magenta"; fi
 if [ -z "$TTBL_SUBJECT" ]; then TTBL_SUBJECT="$col_normal"; fi
 if [ -z "$TTBL_DELIM" ]; then TTBL_DELIM=" "; fi
 if [ -z "$TTBL_COLOR" ]; then TTBL_COLOR="*"; fi
 if [ -z "$TTBL_DAYEND" ]; then TTBL_DAYEND="17"; fi
-if [ -z "$TTBL_CURRENTDAY_MSG" ]; then TTBL_CURRENTDAY_MSG="It's"; fi
-if [ -z "$TTBL_OTHERDAY_MSG" ]; then TTBL_OTHERDAY_MSG="Here's"; fi
 
-if [ ! -f "${data}/token" ]; then echo "No token provided"; fi
+if [ -z "$TTBL_DAYIS_MSG" ]; then TTBL_DAYIS_MSG="It's"; fi
+if [ -z "$TTBL_DAYSET_MSG" ]; then TTBL_DAYSET_MSG="Here's"; fi
 
-function get_help() {
-	echo "\
-usage: ttbl [<options>] <date>
-
-  -h, --help                show this usage summary and exit
-  -token USER_ID PASSWORD   get the token for this user
-  -sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past
-  -mro                      machine-readable output (semicolon seperated)"
-	exit 0
+hextoansi() {
+	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
+	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#..(..).*/\1/")));"
+	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#....(..).*/\1/")))m"
+	echo "$ansi"
 }
 
-function get_timetable() {
+
+mkdir -p "$cache"
+mkdir -p "$data"
+
+if [ "$1" = "-h" ] || [ "$1" == "--help" ]; then
+	echo "$help"
+	exit 0
+elif [ "$1" = "-sync" ]; then # sync
 	nextDays="$2"
 	prevDays="$3"
 	token=$(jq -r '.token' < "${data}/token")
@@ -71,9 +82,8 @@ function get_timetable() {
 		echo "$tmp" > "$timetable"
 		echo "Timetable synced"
 	fi
-}
-
-function get_token() {
+	exit 0
+elif [ "$1" = "-token" ]; then # get token
 	# get the token
 	echo "This takes 15-30 seconds, be patient for once."
 	if [ "$2" = "-mro" ]; then
@@ -93,29 +103,11 @@ function get_token() {
 		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
 	fi
 	exit 0
-}
-
-function recognise() {
-	if [ ! -z "$1" ] && [ "$(echo "$1" | grep -e "+\?[0-9]\+" | wc -w)" -eq "0" ]; then
-		echo "unrecognized option '$1'"
-		get_help
-		exit 0
-	fi
-}
-
-function hextoansi() {
-	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
-	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#..(..).*/\1/")));"
-	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#....(..).*/\1/")))m"
-	echo "$ansi"
-}
-
-case "$1" in
-	'-h' | '--help'	) get_help ;;
-	'-s' | '--sync'	) get_timetable "$2" "$3" ;;
-	'-t' | '--token') get_token "$2" "$3" ;;
-	*) recognise "$1" ;;
-esac
+elif [ ! -z "$1" ] && [ "$(echo "$1" | grep -e "+\?[0-9]\+" | wc -w)" -eq "0" ]; then
+	echo "unrecognized option '$1'"
+	echo "$help"
+	exit 0
+fi
 
 # the rest is processing the data
 datefmt="%Y%m%d"
