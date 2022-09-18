@@ -6,6 +6,11 @@ cache="$HOME/.cache/ttbl"
 mkdir -p "$data"
 mkdir -p "$cache"
 
+if [ ! -f "${data}/token" ]; then
+	echo "No token provided"
+	exit 1
+fi
+
 host="https://caulfieldsync.vercel.app/api"
 timetable="${cache}/timetable.json"
 
@@ -41,8 +46,6 @@ fi
 [ -z "$TTBL_DAYEND" ] && TTBL_DAYEND="17"
 [ -z "$TTBL_CURRENTDAY_MSG" ] && TTBL_CURRENTDAY_MSG="It's"
 [ -z "$TTBL_OTHERDAY_MSG" ] && TTBL_OTHERDAY_MSG="Here's"
-
-if [ ! -f "${data}/token" ]; then echo "No token provided"; fi
 
 function get_help() {
 	echo "\
