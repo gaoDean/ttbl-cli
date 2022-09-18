@@ -6,6 +6,7 @@ cache="$HOME/.cache/ttbl"
 mkdir -p "$data"
 mkdir -p "$cache"
 
+
 if [ ! -f "${data}/token" ]; then
 	if [ ! "$1" = "-t" ] && [ ! "$1" = "--token" ]; then
 		echo "No token provided"
@@ -62,6 +63,7 @@ usage: ttbl [<options>] <date>
 
 # (int daysIntoTheFuture, int daysIntoThePast)
 function get_timetable() {
+	touch "$cache/lastSynced"
 	local nextDays="$1"
 	local prevDays="$2"
 	local token=$(jq -r '.token' < "${data}/token")
