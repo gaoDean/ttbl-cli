@@ -130,7 +130,7 @@ function recognise() {
 # (string datePreference)
 function print_date() {
 	local datefmt="%Y%m%d"
-	if [ -z "$1" ]; then # if no date preference
+	if [ -z "$1" ] || [ "$1" = "-0" ] || [ "$1" = "+0" ]; then # if no date preference
 		if [ "$(date "+%H")" -gt "$TTBL_DAYEND" ]; then
 			# if after school, present tmr classes
 			fetch=$(date -v "+1d" "+%Y%m%d")
