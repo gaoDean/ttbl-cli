@@ -1,126 +1,11 @@
-#bin/sh
+#!/bin/sh
 
 data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
+timetable="${cache}/timetable.json"
 
 mkdir -p "$data"
 mkdir -p "$cache"
-
-
-if [ ! -f "${data}/token" ]; then
-	if [ ! "$1" = "-t" ] && [ ! "$1" = "--token" ]; then
-		echo "No token provided"
-		exit 1
-	fi
-fi
-
-host="https://caulfieldsync.vercel.app/api"
-timetable="${cache}/timetable.json"
-
-col_black="\x1b[38;5;8m"
-col_red="\x1b[38;5;9m"
-col_green="\x1b[38;5;10m"
-col_yellow="\x1b[38;5;11m"
-col_blue="\x1b[38;5;12m"
-col_magenta="\x1b[38;5;13m"
-col_cyan="\x1b[38;5;14m"
-col_white="\x1b[38;5;15m"
-col_normal="\x1b[0m"
-
-mro=false # machine readable output
-if [ "$2" = "--mro" ]; then
-	mro=true # in shell scripts, 0 means true
-	col_black=""
-	col_red=""
-	col_green=""
-	col_yellow=""
-	col_blue=""
-	col_magenta=""
-	col_cyan=""
-	col_white=""
-	col_normal=""
-fi
-
-[ -z "$TTBL_PERIOD" ] && TTBL_PERIOD="$col_blue"
-[ -z "$TTBL_ROOM" ] && TTBL_ROOM="$col_magenta"
-[ -z "$TTBL_SUBJECT" ] && TTBL_SUBJECT="$col_normal"
-[ -z "$TTBL_DELIM" ] && TTBL_DELIM=" "
-[ -z "$TTBL_COLOR" ] && TTBL_COLOR="*"
-[ -z "$TTBL_DAYEND" ] && TTBL_DAYEND="17"
-[ -z "$TTBL_CURRENTDAY_MSG" ] && TTBL_CURRENTDAY_MSG="It's"
-[ -z "$TTBL_OTHERDAY_MSG" ] && TTBL_OTHERDAY_MSG="Here's"
-
-function get_help() {
-	echo "\
-usage: ttbl [<options>] <date>
-
-  -h, --help                     show this usage summary and exit
-  -t, --token USER_ID PASSWORD   get the token for this user
-  -s, --sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past
-  --mro                          machine-readable output (semicolon seperated)"
-	exit 0
-}
-
-# (int daysIntoTheFuture, int daysIntoThePast)
-function get_timetable() {
-	touch "$cache/lastSynced"
-	local nextDays="$1"
-	local prevDays="$2"
-	local token=$(jq -r '.token' < "${data}/token")
-
-	[ -z "$1" ] && nextDays="1"
-	[ -z "$2" ] && prevDays="0"
-
-	# get the timetable
-	if "$mro" ; then
-		tmp=$(curl --silent "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
-	else
-		tmp=$(curl --progress-bar "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
-	fi
-
-	# check if timetable is valid
-	if [ "$(echo "$tmp" | jq -r '.error')" != "null" ]; then
-		echo "$tmp" | jq -r '.error'
-		echo "Failed. Check that you have a valid token."
-		[ ! "$mro" ] && echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
-		exit 1
-	else
-		[ ! -f "$timetable" ] && printf "[\n]" > "$timetable"
-
-		tmp=$(echo "$tmp" | jq '.data.classes')
-		tmp=$(jq --argjson arr1 "$tmp" --argjson arr2 "$(cat "$timetable")" -n \
-			'$arr2 + $arr1 | unique_by(.startTime)')
-
-		echo "$tmp" > "$timetable"
-		echo "Timetable synced"
-	fi
-	exit 0
-}
-
-# (int studentNumber, string password)
-function get_token() {
-	echo "This takes 15-30 seconds, be patient for once."
-	if "$mro"; then
-		tmp=$(curl --silent -L "${host}/token?username=${1}&password=${2}")
-	else
-		tmp=$(curl --progress-bar -L "${host}/token?username=${1}&password=${2}")
-	fi
-
-	# check if token is valid
-	if [ "$(echo "$tmp" | grep -e "^Error" | wc -w)" -gt "0" ]; then
-		echo "Something went wrong, try again."
-		[ ! "$mro" ] && echo "If you're 100% sure that it was correct, sometimes you just need to try again."
-		exit 1
-	elif [ "$(echo "$tmp" | jq -r '.token')" = "null" ]; then
-		echo "Something went wrong, try again."
-		[ ! "$mro" ] && echo "$tmp" | jq -r '.error'
-		exit 1
-	else
-		echo "$tmp" > "${data}/token"
-		echo "Token fetched into ${HOME}/.local/share/ttbl/token"
-	fi
-	exit 0
-}
 
 # (string opt)
 function recognise() {
@@ -135,14 +20,14 @@ function recognise() {
 function print_date() {
 	local datefmt="%Y%m%d"
 	if [ -z "$1" ] || [ "$1" = "-0" ] || [ "$1" = "+0" ]; then # if no date preference
-		if [ "$(date "+%H")" -gt "$TTBL_DAYEND" ]; then
+		if [ "$(date "+%H")" -gt "$2" ]; then #!! $2 is the time of end of day
 			# if after school, present tmr classes
 			fetch=$(date -v "+1d" "+%Y%m%d")
-			printf "%s" "$TTBL_OTHERDAY_MSG"
+			printf "%s" "Here's"
 		else
 
 			fetch=$(date "+%Y%m%d")
-			printf "%s" "$TTBL_CURRENTDAY_MSG"
+			printf "%s" "It's"
 		fi
 	else
 		date=$(echo "$1" | grep -e "[-+][0-9]\+")
@@ -153,16 +38,16 @@ function print_date() {
 		else
 			fetch=$(date -v "${date}d" "+${datefmt}")
 		fi
-		printf "%s" "$TTBL_OTHERDAY_MSG"
+		printf "%s" "Here's"
 	fi
 	date=$(date -j -f "$datefmt" "$fetch" "+%A")
-	printf " ${col_cyan}%s${col_normal}. " "$date"
+	printf " %s. " "$date"
 }
 
 # => "period; room\t; subject; color"
 function get_classes() {
 	output=$(jq '.[]' < "$timetable" |
-		jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.colour);"')
+		jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.startTime); \(.endTime); \(.teacherName); \(.colour)"')
 
 	# date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
 	output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
@@ -179,41 +64,10 @@ function check_for_classes() {
 	fi
 }
 
-# (string classes)
-function print_formatted_classes() {
-	printf "\n%s\n" "$1" | \
-	while read -r line; do
-		echo "$line" |
-			sed -E "s/^([0-9]);(.*?);(.*); #.{6}.*/\
-${TTBL_PERIOD}\1\
-${TTBL_DELIM}${col_normal}${TTBL_ROOM}\2\
-$(hextoansi "$line") ${TTBL_COLOR}${TTBL_SUBJECT}\3\
-/"
-	done
-}
-
-function hextoansi() {
-	ansi="\x1b[38;2;$((16#$(echo "$1" | sed -E "s/.*#(..).*/\1/")));"
-	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#..(..).*/\1/")));"
-	ansi="${ansi}$((16#$(echo "$1" | sed -E "s/.*#....(..).*/\1/")))m"
-	echo "$ansi"
-}
-
 # ==================== MAIN ===========================
 
-# handle args
-case "$1" in
-	'-h' | '--help'	) get_help ;;
-	'-s' | '--sync'	) get_timetable "$2" "$3" ;;
-	'-t' | '--token') get_token "$2" "$3" ;;
-	*) recognise "$1" ;;
-esac
+recognise "$1"
 print_date "$1" # print the Heres Wednesday"
 output=$(get_classes) # get the classes from the current timetable
 check_for_classes "$output" # check if theres any classes that day
-
-if "$mro"; then
-	printf "\n%s\n" "$output" | sed -E "s/; #.*// ; s/\s*;\s*/;/g"
-else
-	print_formatted_classes "$output"
-fi
+printf "\n%s\n" "$output" | sed -E "s/\s*;\s*/;/g"

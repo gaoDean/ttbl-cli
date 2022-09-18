@@ -27,20 +27,6 @@ col_cyan="\x1b[38;5;14m"
 col_white="\x1b[38;5;15m"
 col_normal="\x1b[0m"
 
-mro=false # machine readable output
-if [ "$2" = "--mro" ]; then
-	mro=true # in shell scripts, 0 means true
-	col_black=""
-	col_red=""
-	col_green=""
-	col_yellow=""
-	col_blue=""
-	col_magenta=""
-	col_cyan=""
-	col_white=""
-	col_normal=""
-fi
-
 [ -z "$TTBL_PERIOD" ] && TTBL_PERIOD="$col_blue"
 [ -z "$TTBL_ROOM" ] && TTBL_ROOM="$col_magenta"
 [ -z "$TTBL_SUBJECT" ] && TTBL_SUBJECT="$col_normal"
@@ -56,8 +42,7 @@ usage: ttbl [<options>] <date>
 
   -h, --help                     show this usage summary and exit
   -t, --token USER_ID PASSWORD   get the token for this user
-  -s, --sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past
-  --mro                          machine-readable output (semicolon seperated)"
+  -s, --sync FORWARD BACKWARD    sync classes <FORWARD> days into the future, <BACKWARD> days into the past"
 	exit 0
 }
 
@@ -72,17 +57,12 @@ function get_timetable() {
 	[ -z "$2" ] && prevDays="0"
 
 	# get the timetable
-	if "$mro" ; then
-		tmp=$(curl --silent "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
-	else
-		tmp=$(curl --progress-bar "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
-	fi
+	tmp=$(curl --progress-bar "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true")
 
 	# check if timetable is valid
 	if [ "$(echo "$tmp" | jq -r '.error')" != "null" ]; then
 		echo "$tmp" | jq -r '.error'
 		echo "Failed. Check that you have a valid token."
-		[ ! "$mro" ] && echo "${host}/timetable/${token}?dayMinus=${prevDays}&dayPlus=${nextDays}&shorten=true"
 		exit 1
 	else
 		[ ! -f "$timetable" ] && printf "[\n]" > "$timetable"
@@ -100,20 +80,15 @@ function get_timetable() {
 # (int studentNumber, string password)
 function get_token() {
 	echo "This takes 15-30 seconds, be patient for once."
-	if "$mro"; then
-		tmp=$(curl --silent -L "${host}/token?username=${1}&password=${2}")
-	else
-		tmp=$(curl --progress-bar -L "${host}/token?username=${1}&password=${2}")
-	fi
+	tmp=$(curl --progress-bar -L "${host}/token?username=${1}&password=${2}")
 
 	# check if token is valid
 	if [ "$(echo "$tmp" | grep -e "^Error" | wc -w)" -gt "0" ]; then
 		echo "Something went wrong, try again."
-		[ ! "$mro" ] && echo "If you're 100% sure that it was correct, sometimes you just need to try again."
 		exit 1
 	elif [ "$(echo "$tmp" | jq -r '.token')" = "null" ]; then
 		echo "Something went wrong, try again."
-		[ ! "$mro" ] && echo "$tmp" | jq -r '.error'
+		echo "$tmp" | jq -r '.error'
 		exit 1
 	else
 		echo "$tmp" > "${data}/token"
@@ -208,12 +183,8 @@ case "$1" in
 	'-t' | '--token') get_token "$2" "$3" ;;
 	*) recognise "$1" ;;
 esac
+
 print_date "$1" # print the Heres Wednesday"
 output=$(get_classes) # get the classes from the current timetable
 check_for_classes "$output" # check if theres any classes that day
-
-if "$mro"; then
-	printf "\n%s\n" "$output" | sed -E "s/; #.*// ; s/\s*;\s*/;/g"
-else
-	print_formatted_classes "$output"
-fi
+print_formatted_classes "$output"
