@@ -7,8 +7,10 @@ mkdir -p "$data"
 mkdir -p "$cache"
 
 if [ ! -f "${data}/token" ]; then
-	echo "No token provided"
-	exit 1
+	if [ ! "$1" = "-t" ] && [ ! "$1" = "--token" ]; then
+		echo "No token provided"
+		exit 1
+	fi
 fi
 
 host="https://caulfieldsync.vercel.app/api"
