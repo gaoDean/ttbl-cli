@@ -4,6 +4,8 @@ data="$HOME/.local/share/ttbl"
 cache="$HOME/.cache/ttbl"
 timetable="${cache}/timetable.json"
 
+[ ! -f "$timetable" ] && exit 1
+
 mkdir -p "$data"
 mkdir -p "$cache"
 
