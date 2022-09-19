@@ -46,8 +46,8 @@ function print_date() {
 
 # => "period; room\t; subject; color"
 function get_classes() {
-	output=$(jq '.[]' < "$timetable" |
-		jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.startTime); \(.endTime); \(.teacherName); \(.colour)"')
+	output=$(${1}/modules/ttbl-cli/src/jq '.[]' < "$timetable" |
+		${1}/modules/ttbl-cli/src/jq -r '"\(.id); \(.periodName); \(.room)\t; \(.description); \(.startTime); \(.endTime); \(.teacherName); \(.colour)"')
 
 	# date; remove empty lines; remove year number; remove W09; lowercase; remove ` - content`
 	output=$(printf "%s" "$output" | sed -E "s/^[0-9]{6}-${fetch}; (.*)/\1/ ;
@@ -68,6 +68,6 @@ function check_for_classes() {
 
 recognise "$1"
 print_date "$1" # print the Heres Wednesday"
-output=$(get_classes) # get the classes from the current timetable
+output=$(get_classes "$3") # get the classes from the current timetable
 check_for_classes "$output" # check if theres any classes that day
 printf "\n%s\n" "$output" | sed -E "s/\s*;\s*/;/g"
